@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace：命名空间，用于隔离sql，还有一个很重要的作用，后面会讲 -->
+<!-- namespace 你定义了命名空间，你用的时候就是namespace.id 还有个作用就是用来mapper动态代理 -->
+<mapper namespace="config.mapper.OrderMapper">
+	<resultMap type="pojo.Orders" id="order1"><!--type是指定定位到那个pojo中 id是resultmap的主键 -->
+		<id property="id" column="id"/><!-- property主键在pojo中的属性名 column主键在数据库中的类名 -->
+		<result property="userId" column="user_id" />
+		<result property="number" column="number" />
+		<result property="createtime" column="createtime" />
+		<result property="note" column="note" />
+	</resultMap>
+	<select id="queryOrderAll" resultMap="order1">
+		SELECT id,user_id,number,createtime,note FROM orders
+		<!-- user_id 和 order中的userid列无法对应，所以查出来是null -->
+	</select> 
+</mapper>

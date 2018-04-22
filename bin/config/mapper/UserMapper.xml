@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace：命名空间，用于隔离sql，还有一个很重要的作用，后面会讲 -->
+<!-- namespace 你定义了命名空间，你用的时候就是namespace.id 还有个作用就是用来mapper动态代理 -->
+<!-- 这个动态mapper代理，我觉得就是原来的dao开发你需要自己传入一个sqlsessionFactory对象来创建一个sqlsession对象 -->
+<!-- mapper不需要你去写接口 实现类自己去开启sqlsession 只需要洗衣歌mapper接口 它是在外部创建sqlsession对象 -->
+<!-- 然后创建通过sqlsession。getmapper来获取这个接口的实例 （Mybatis框架根据接口定义创建接口的动态代理对象）其实就是mybits对象来为你实现了daoimpl -->
+<mapper namespace="config.mapper.UserMapper">
+	<!-- 你的id要和mapper接口中的方法名一样，入参和返回的参数类型都要一样 -->
+	<select id="find" parameterType="Integer" resultType="pojo.User">
+		select * from user where id = #{v}
+	</select>
+	<insert id="insertUser" parameterType="pojo.User">
+		<selectKey keyColumn="id" keyProperty="id" order="AFTER" resultType="int">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO user (username,sex,birthday,address) VALUES (#{username},#{sex},#{birthday},#{address})
+	</insert>
+	<update id="updateUser" parameterType="pojo.User">
+		UPDATE user set username=#{username} where id =#{id}
+	</update>
+	<delete id="deleteUser" parameterType="int">
+		delete from user where id=#{id}
+	</delete>
+	<select id="queryUserByQueryVo" parameterType="pojo.QueryVo" resultType="pojo.User">
+		SELECT * FROM user WHERE username LIKE '%${user.username}%'
+	</select>
+	<!--  动态sql语言就是可以有后面的where语句有也可以没有，因为如果直接写在sql语句后面的话，你参数设置的少了就不行，这个可以你传入就用，不传入就不用-->
+	<select id="queryUserByWhere" parameterType="pojo.User" resultType="pojo.User">
+		SELECT <include refid="userFields"/><!--  如果要在这里面使用别的mapper。xml文件的时候就在refid前面加上对应的namespace--> FROM user 
+		<where>
+			<if test="sex !=null">
+				AND sex= #{sex}
+			</if>
+			<if test="username !=null and username != '' ">
+				AND username LIKE '%${username}%'
+			</if>	
+		</where>
+	</select>
+	<!-- 还可以声明sql片段 达到sql重用 -->
+	<sql id="userFields">
+		id ,username,birthday,sex,address
+	</sql>
+	<select id="queryUserByIds" parameterType="pojo.QueryVo" resultType="pojo.User">
+		SELECT * FROM user
+		<where>
+			<foreach collection="ids" item="item" open="id IN (" close=")"
+			separator=",">
+			#{item}
+			</foreach>
+		</where>
+	</select>
+	<select id="queryOrderUser" resultType="pojo.OrderUser">
+		SELECT
+		o.id,
+		o.user_id
+		userId,
+		o.number,
+		o.createtime,
+		o.note,
+		u.username,
+		u.address
+		FROM
+		orders o
+		LEFT JOIN user u ON o.user_id = u.id
+	</select>
+	<resultMap type="pojo.User" id="userOrderResultMap">
+		<id property="id" column="id" />
+		<result property="username" column="username" />
+		<result property="birthday" column="birthday" />
+		<result property="sex" column="sex" />
+		<result property="address" column="address" />
+	
+		<!-- 配置一对多的关系 -->
+		<collection property="orders" javaType="list" ofType="pojo.Orders">
+			<!-- 配置主键，是关联Order的唯一标识 -->
+			<id property="id" column="oid" />
+			<result property="number" column="number" />
+			<result property="createtime" column="createtime" />
+			<result property="note" column="note" />
+		</collection>
+	</resultMap>
+
+<!-- 一对多关联，查询订单同时查询该用户下的订单 -->
+<select id="queryUserOrder" resultMap="userOrderResultMap">
+	SELECT
+	u.id,
+	u.username,
+	u.birthday,
+	u.sex,
+	u.address,
+	o.id oid,
+	o.number,
+	o.createtime,
+	o.note
+	FROM
+	user u
+	LEFT JOIN orders o ON u.id = o.user_id
+</select>
+	
+	
+</mapper>
